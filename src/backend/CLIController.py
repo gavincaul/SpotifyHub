@@ -1,15 +1,16 @@
-from functions import playlist, user, song, album, spotifymanager
+from functions.models import playlist, user, song, album, currentuser
+from functions import spotifymanager
 
 class CLIController:
     def __init__(self):
-        self.spotify_manager = spotifymanager.SpotifyManager(scope="user-library-read user-read-private user-follow-read playlist-modify-public")
+        self.spotify_manager = spotifymanager.SpotifyManager(scope="user-library-read user-read-private user-follow-read playlist-modify-public user-top-read")
         self.current_user = None
 
     def cmd_login(self):
         if self.spotify_manager.login_oauth():
             user_id = self.spotify_manager.get_current_user_id()
             if user_id:
-                self.current_user = user.User(self.spotify_manager, user_id)
+                self.current_user = currentuser.CurrentUser(self.spotify_manager)
                 print(f"Logged in as {user_id}")
             else:
                 print("Failed to get user info after login.")
@@ -60,7 +61,9 @@ class CLIController:
                         return {"code": -1, "value": value}
                     else:
                         return {"code": 3, "value": value}
-                    
+
+    def check_string(s):
+        return (isinstance(s, str) and s.strip() != "")           
                     
 
 
@@ -73,13 +76,141 @@ class CLIController:
             print(f"{i} - {pl.get_playlist_name()} ({pl.get_playlist_length()} tracks)")
 
 
+    def prompt_time_range(self):
+        time_range_map = {"s": "short_term", "m": "medium_term", "l": "long_term"}
+        descriptions = {"s": "short term: 4 weeks", "m": "medium term: 6 months", "l": "long term: ~1 year"}
 
-        
+        while True:
+            print("Time range options:")
+            for key, desc in descriptions.items():
+                print(f"  {key}: {desc}")
+            selection = input("Please select a time range (s/m/l) or 'q' to cancel: ").strip().lower()
+
+            if selection == "q":
+                print("Cancelling command with no execution")
+                return None
+            if selection in time_range_map:
+                return time_range_map[selection]
+
+            print("Invalid input. Please try again.")
+    
+
+    # Album
+    # b - Get Album
+    # bl - Album (track) list
+    # ba - Album Artist
+    # bs - Album Save
+    # bu - Album Unsave
+
+
+
+
+    # Artist
+    # a - Artist details
+    # at - Artist Top Tracks (-a -n)
+    # aa - Artist Top Albums
+    # ar - Artist Related
+    # ap - Artist Song's on Playlist
+    # apc - Create Artist Playlist
+    # apcp - Create Artist Playlist from Playlist (splice)
+    # atg - Artist Genres
+    # as - Artist Search
+
+
+
+
+
+
+
+    # Track
+
+    # s - Song details
+    # ss - Save Song (liked songs)
+    # spa - Song Playlist Add
+    # spr - Song Playlist Remove
+    # spl - Song Playlist List 
+    # su - Song Unsave
+    # sl - Song List
+
+
+
+
+
+    # Playlist
+
+    def cmd_p(self, *args):
+        """Returns Playlist Information (-v <PLAYLIST>)"""
+        check_arg = self.arg_parser(args)
+        match check_arg["code"]:
+            case -1: 
+                pass
+            case 0: # default
+                pid = input("Enter Playlist ID:")
+                try:
+                    result = self.sp.playlist(pid)
+                    print(result)
+                except:
+                    print("Unable to retrieve playlist information")
+            case 3: # -v User Profile Value
+                try:
+                    result = self.spotify_manager.sp.playlist(check_arg["value"]) != -1
+                    print(result)
+                except:
+                    print("Unable to retrieve playlist information")
+            case _:
+                print("Invalid argument for function: p")
+                print("Ignoring command")
+
+
+    '''def cmd_pt(self, *args):
+        """Returns Playlist Tracks (-v <PLAYLIST>)"""
+        check_arg = self.arg_parser(args)
+        match check_arg["code"]:
+            case -1: 
+                pass
+            case 0: # default
+                pid = input("Enter Playlist ID:")
+                try:
+                    result = self.sp.playlist(pid)
+                    p = playlist.Playlist(self.spotify_manager, pid)
+                except:
+                    print("Unable to retrieve playlist information")
+            case 3: # -v User Profile Value
+                try:
+                    result = self.spotify_manager.sp.playlist(check_arg["value"]) != -1
+                    print(result)
+                except:
+                    print("Unable to retrieve playlist information")
+            case _:
+                print("Invalid argument for function: p")
+                print("Ignoring command")
+                
+                need -a -n ^
+                '''
+    
+    # ptl - playlist track list
+    # ptx - playlist track exchange (replace)
+    # ppi - playlist playlist intersection
+    # ppu - playlist playlist union
+    # pc - playlist create
+    # pimg - playlist image
+    # pimgr - playlist image replace
+    # pd - delete playlist
+    # ptm - playlist track move
+    # pdd - playlist details description
+    # pdn - playlist details name
+    # pdp - playlist details public
+    # pti - playlist track(s) insert
+    # pti - playlist track(s) insert (in) spot (-s)
+    # ptd - playlist track delete
+
         
 
 
 
     # User
+
+    # usb - User Saved Albums
 
     def cmd_u(self, *args):
         """Returns User information (-v <USER>)"""
@@ -89,9 +220,10 @@ class CLIController:
                 pass
             case 0: # default
                 if not self.current_user:
-                    print("No user currently signed in. Use 'login' to sign in")
+                    print("No user currently signed in. Use 'login' to sign in, or check a specific User by first using ulf -v <USER>")
                     return
-                print("Current User Data:\n" + self.current_user.get_user_profile())
+                print("Current User Data:")
+                print(self.current_user.get_user_profile())
                 return
             case 3: # -v User Profile Value
                 result = self.spotify_manager.get_user_profile(check_arg["value"]) != -1
@@ -111,7 +243,7 @@ class CLIController:
                 pass
             case 0:
                 if not self.current_user:
-                    print("You must login first with 'login' or check a specific User by first using ulf -v <USER>")
+                    print("You must login first with 'login', or check a specific User by first using ulf -v <USER>")
                     return
                 result = self.spotify_manager.get_user_profile(self.current_user.user_id)
                 if result != -1:
@@ -195,3 +327,136 @@ class CLIController:
             case _:
                 print("Invalid argument for function: ulp")
                 print("Ignoring command")
+
+    def cmd_ultt(self, *args):
+            """User List Top Tracks (-n, -a)"""
+            check_arg = self.arg_parser(args)
+            selection = self.prompt_time_range()
+            if not selection:
+                return
+            match check_arg["code"]:
+                case -1: 
+                    pass
+                case 0: # default
+                    if not self.current_user:
+                        print("You must login first with 'login'")
+                        return
+                    tracks = self.current_user.get_user_top_tracks(total = 10, time_range=selection)
+                    for t in tracks:
+                        print(t)
+                case 1:
+                    if not self.current_user:
+                        print("You must login first with 'login'")
+                        return
+                    tracks = self.current_user.get_user_top_tracks(time_range=selection)
+                    for t in tracks:
+                        print(t)
+                case 2:
+                    if not self.current_user:
+                        print("You must login first with 'login'")
+                        return
+                    tracks = self.current_user.get_user_top_tracks(total = check_arg["value"], time_range=selection)
+                    for t in tracks:
+                        print(t)
+                case _:
+                    print("Invalid argument for function: ultt")
+                    print("Ignoring command")
+
+
+
+
+    def cmd_ulta(self, *args):
+            """User List Top Artists (-n, -a)"""
+            check_arg = self.arg_parser(args)
+            selection = self.prompt_time_range()
+            if not selection:
+                return
+            match check_arg["code"]:
+                case -1: 
+                    pass
+                case 0: # default
+                    if not self.current_user:
+                        print("You must login first with 'login'")
+                        return
+                    tracks = self.current_user.get_user_top_artists(total = 10, time_range=selection)
+                    for t in tracks:
+                        print(t)
+                case 1:
+                    if not self.current_user:
+                        print("You must login first with 'login'")
+                        return
+                    tracks = self.current_user.get_user_top_tracks()
+                    for t in tracks:
+                        print(t)
+                case 2:
+                    if not self.current_user:
+                        print("You must login first with 'login'")
+                        return
+                    tracks = self.current_user.get_user_top_artists(total = check_arg["value"], time_range=selection)
+                    for t in tracks:
+                        print(t)
+                case _:
+                    print("Invalid argument for function: ultt")
+                    print("Ignoring command")
+
+
+    def cmd_ufp(self, *args):
+        """User follow playlist (-v)"""
+        check_arg = self.arg_parser(args)
+        match check_arg["code"]:
+            case -1:
+                pass
+            case 0:
+                if not self.current_user:
+                    print("You must login first with 'login'")
+                    return
+                playlist_id = input("Provide playlist id: ")
+                try:
+                    playlist_data = self.sp.playlist(playlist_id)
+                except Exception as e:
+                    print(f"Playlist not found or inaccessible: {e}")
+                    return
+                self.sp.current_user.follow_playlist(playlist_id)
+            case 2:
+                if not self.current_user:
+                    print("You must login first with 'login'")
+                    return
+                self.sp.current_user.follow_playlist(playlist_id)
+            case _:
+                print("Invalid argument for function: ufp")
+                print("Ignoring command")
+    def cmd_ufpu(self, *args):
+        """User UNfollow playlist (-v)"""
+        check_arg = self.arg_parser(args)
+        match check_arg["code"]:
+            case -1:
+                pass
+            case 0:
+                if not self.current_user:
+                    print("You must login first with 'login'")
+                    return
+                playlist_id = input("Provide playlist id: ")
+                try:
+                    playlist_data = self.sp.playlist(playlist_id)
+                except Exception as e:
+                    print(f"Playlist not found or inaccessible: {e}")
+                    return
+                self.sp.current_user.unfollow_playlist(playlist_id)
+            case 2:
+                if not self.current_user:
+                    print("You must login first with 'login'")
+                    return
+                self.sp.current_user.unfollow_playlist(playlist_id)
+            case _:
+                print("Invalid argument for function: ufp")
+                print("Ignoring command")
+
+    
+
+    
+
+        
+
+
+                
+                

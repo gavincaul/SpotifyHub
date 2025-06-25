@@ -1,4 +1,4 @@
-from src.api.functions.album import Album
+
 
 
 class Song:
@@ -9,32 +9,33 @@ class Song:
         self.spotify_manager = spotify_manager
 
     def get_track(self):
-        if self.data == None:
+        if self.data is None:
             self.data = self.sp.track(self.track_id)
         return self.data
 
     def get_track_name(self):
-        if self.data == None:
+        if self.data is None:
             self.data = self.get_track()
         return self.data["name"]
 
     def get_track_album(self):
-        if self.data == None:
+        from .album import Album
+        if self.data is None:
             self.data = self.get_track()
         return Album(spotify_manager=self.spotify_manager, album_id=self.data["album"]["id"])
 
     def get_track_length_ms(self):
-        if self.data == None:
+        if self.data is None:
             self.data = self.get_track()
         return self.data["duration_ms"]  # in milliseconds
 
     def get_track_popularity(self):
-        if self.data == None:
+        if self.data is None:
             self.data = self.get_track()
         return self.data["popularity"]
 
     def get_track_image(self):
-        if self.data == None:
+        if self.data is None:
             self.data = self.get_track()
         try:
             return self.data["images"][0]["url"]

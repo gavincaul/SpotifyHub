@@ -28,7 +28,7 @@ def main():
             line = input(">> ").strip()
             if not line:
                 continue
-            if line in ("exit", "quit"):
+            if line in ("exit", "quit", "q"):
                 print("Exiting SpotifyHub CLI.")
                 break
 
@@ -37,7 +37,7 @@ def main():
             args = parts[1:]
 
             if cmd == "help":
-                print("Available commands: login, ulp, help, exit")
+                print("Hit Tab to see all available commands")
                 continue
 
             method_name = f"cmd_{cmd}"
