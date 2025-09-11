@@ -105,3 +105,19 @@ class CurrentUser(User):
                 break 
 
         return following
+    
+    def saved_albums_add(self, album_ids):
+        if self.data is None:
+            self.data = self.sp.user(self.user_id)
+        try:
+            self.sp.current_user_saved_albums_add(album_ids)
+        except Exception as e:
+            print(f"Unable to save albums: {e}")
+    
+    def saved_albums_remove(self, album_ids):
+        if self.data is None:
+            self.data = self.sp.user(self.user_id)
+        try:
+            self.sp.current_user_saved_albums_delete(album_ids)
+        except Exception as e:
+            print(f"Unable to save albums: {e}")

@@ -42,7 +42,26 @@ class Song:
         except TypeError as e:
             print("ERROR: img is null {e}")
             return "https://static.thenounproject.com/png/3647578-200.png"
-
+        
+    def get_track_artists(self):
+        from .artist import Artist
+        if self.data is None:
+            self.data = self.get_track()
+        artists = [Artist(spotify_manager=self.spotify_manager, artist_id=artist["id"]) for artist in self.data["artists"]]
+        return artists
+    
+    def is_track_explicit(self):
+        if self.data is None:
+            self.data = self.get_track()
+        return self.data["explicit"]
+    
+    def get_track_url(self):
+        if self.data is None:
+            self.data = self.get_track()
+        return self.data["external_urls"]["spotify"]
+    
+    def get_track_id(self):
+        return self.track_id
 
 '''
 Example JSON

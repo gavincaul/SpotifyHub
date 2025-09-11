@@ -1,4 +1,4 @@
-from CLIController import CLIController
+from functions.CLIController import CLIController
 import readline
 import inspect
 

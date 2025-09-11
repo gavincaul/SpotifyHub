@@ -1,1 +1,1 @@
-from .functions import album, playlist, song, user, spotifymanager
+from .functions import CLIController, album, playlist, song, user, spotifymanager
