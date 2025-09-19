@@ -30,24 +30,21 @@ class Playlist:
         except TypeError as e:
             print("ERROR: img is null {e}")
             return "https://static.thenounproject.com/png/3647578-200.png"
-    
+
     def get_playlist_tracks(self, total):
         if self.data is None:
             self.data = self.get_playlist()
-        
+
         songs = []
         limit = 50
         offset = 0
 
-
         if total is None:
-            result = self.sp.playlist_tracks(self.playlist_id, limit=limit, offset=offset)
-            total = result["total"]
-            songs.extend(result["items"])
-            offset += len(result["items"])
+            self.get_playlist_length()
         else:
             while len(songs) < total:
-                result = self.sp.current_user_top_artists(limit=min(limit, total - offset), offset=offset)
+                result = self.sp.playlist_tracks(self.playlist_id,
+                                                 limit=min(limit, total - offset), offset=offset)
                 items = result["items"]
                 if not items:
                     break
@@ -55,3 +52,10 @@ class Playlist:
                 offset += len(items)
 
         return songs
+
+    def get_playlist_track_names(self, total):
+        tracks = self.get_playlist_tracks(total)
+        track_list = {}
+        for item in tracks:
+            track_list[item["track"]["id"]] = item["track"]["name"]
+        return track_list

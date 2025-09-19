@@ -1,5 +1,6 @@
 from functions.models.song import Song
 
+
 class SongCommands:
     def __init__(self, spotify_manager):
         self.spotify_manager = spotify_manager
@@ -9,16 +10,54 @@ class SongCommands:
     def check_song(self, song_id=None):
         if song_id in self.song_list:
             return self.song_list[song_id]
-    
+
         self.song_list[song_id] = Song(self.spotify_manager, track_id=song_id)
         return self.song_list[song_id]
-    
+
     def get_song_info(self, song_id=None):
         song_obj = self.check_song(song_id)
-        print(f"Song Name: {song_obj.get_track_name()}")
-        print(f"Artists: {', '.join([artist.get_artist_name() for artist in song_obj.get_track_artists()])}")
-        print(f"Album: {song_obj.get_track_album().get_album_name()}")
-        print(f"Duration (ms): {song_obj.get_track_length_ms()}")
-        print(f"Popularity: {song_obj.get_track_popularity()}")
-        print(f"Explicit: {song_obj.is_track_explicit()}")
-        print(f"External URL: {song_obj.get_track_url()}")
+        return song_obj
+
+    def save_song(self, song_id=None, current_user=None):
+        if not current_user:
+            print("You must login first")
+            return
+        try:
+            current_user.saved_tracks_add([song_id])
+            print("Song saved to your library")
+        except Exception as e:
+            print(f"Unable to save Song: {e}")
+
+    def unsave_song(self, song_id=None, current_user=None):
+        if not current_user:
+            print("You must login first")
+            return
+        try:
+            current_user.saved_tracks_delete([song_id])
+            print("Song unsaved from your library")
+        except Exception as e:
+            print(f"Unable to save Song: {e}")
+
+    def add_song_to_playlist(self, song_id, playlist_id, current_user=None):
+        if not current_user:
+            print("You must login first")
+            return
+        try:
+            current_user.playlist_add_items(song_id, playlist_id)
+        except Exception as e:
+            print(f"Unable to add song(s) to playlist: {e}")
+
+    def remove_song_from_playlist(self, song_id, playlist_id, current_user=None):
+        if not current_user:
+            print("You must login first")
+            return
+        try:
+            current_user.playlist_remove_items(
+                song_id, playlist_id)
+        except Exception as e:
+            print(f"Unable to remove song(s) to playlist: {e}")
+
+    def check_song_on_playlist(self, song_id, playlist_tracks):
+        if playlist_tracks[song_id]:
+            return playlist_tracks[song_id]
+        return ""

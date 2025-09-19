@@ -52,15 +52,14 @@ class CLIController:
                     except ValueError:
                         print(f"Invalid type for flag {flag}: {raw_value}")
                         value = None
-                    parsed[flag] = value
+                    parsed[flag] = self.strip_URL(value)
                     i += 1  # skip the value
             else:
                 parsed[flag] = True
             i += 1
         return parsed
 
-
-    def cmd_login(self, *args): 
+    def cmd_login(self, *args):
         """Login and set the current user"""
         self.currentuser_cmds.cmd_login()
         # Update CLIController's current_user reference
@@ -132,6 +131,7 @@ class CLIController:
         except Exception as e:
             print(f"Error retrieving album track list: {e}")
     # ba - Album Artist
+
     def cmd_ba(self, *args):
         """Returns Album Artists (-v <ALBUM>)"""
         try:
@@ -190,8 +190,12 @@ class CLIController:
             artist_id = args_dict.get(
                 "-v") or self.strip_URL(input("Enter Artist ID: "))
 
-            self.artist_cmds.get_artist_info(artist_id)
-
+            artist_obj = self.artist_cmds.get_artist_info(artist_id)
+            print(f"Name: {artist_obj.get_artist_name()}")
+            print(f"Genres: {', '.join(artist_obj.get_artist_genres())}")
+            print(f"Followers: {artist_obj.get_artist_followers()}")
+            print(f"Popularity: {artist_obj.get_artist_popularity()}")
+            print(f"Image URL: {artist_obj.get_artist_image_url()}")
         except Exception as e:
             print(f"Error retrieving artist info: {e}")
 
@@ -210,8 +214,8 @@ class CLIController:
         except Exception as e:
             print(f"Error retrieving artist top tracks: {e}")
 
-        
     # aa - Artist Top Albums
+
     def cmd_aa(self, *args):
         """Returns Artist Top Albums (-v <ARTIST>)"""
         try:
@@ -250,47 +254,175 @@ class CLIController:
     # apc - Create Artist Playlist
     # apcp - Create Artist Playlist from Playlist (splice)
     # atg - Artist Genres
+    def cmd_atg(self, *args):
+        """Returns Artist's Genres (-v <ARTIST> -p <PLAYLIST>)"""
+        try:
+            args_dict = self.arg_parser(args)
+            artist_id = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Artist ID: "))
+            genres = self.artist_cmds.get_artist_genres(artist_id)
+            print("Artist Genres")
+            for i, g in enumerate(genres):
+                print(f"({i}) {g}")
+        except Exception as e:
+            print(f"Error retrieving artist genres: {e}")
     # as - Artist Search
+
+    def cmd_as(self, *args):
+        """Returns List of Artists from search (-v <ARTIST SEARCH VALUE>)"""
+        try:
+            args_dict = self.arg_parser(args)
+            search_value = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Search Value: "))
+            search = self.artist_cmds.search_artist(
+                search_value)  # [[artist_name, id], ...]
+            print("Possible Artists")
+
+            for i, a in enumerate(search):
+                print(f"({i}) {a[0]}, ID: {a[1]}")
+        except Exception as e:
+            print(f"Error searching for artist(s): {e}")
 
     # Track
 
     # s - Song details
+    def cmd_s(self, *args):
+        """Returns Track Information (-v <TRACK_ID>)"""
+        try:
+            args_dict = self.arg_parser(args)
+            track_id = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Track ID: "))
+            song_obj = self.song_cmds.get_song_info(track_id)
+            print(f"Song Name: {song_obj.get_track_name()}")
+            print(
+                f"Artists: {', '.join([artist.get_artist_name() for artist in song_obj.get_track_artists()])}")
+            print(f"Album: {song_obj.get_track_album().get_album_name()}")
+            print(f"Duration (ms): {song_obj.get_track_length_ms()}")
+            print(f"Popularity: {song_obj.get_track_popularity()}")
+            print(f"Explicit: {song_obj.is_track_explicit()}")
+            print(f"External URL: {song_obj.get_track_url()}")
+
+        except Exception as e:
+            print(f"Error retrieving artist info: {e}")
+
     # ss - Save Song (liked songs)
+    def cmd_ss(self, *args):
+        """Saves song to 'Liked Songs' (-v <TRACK_ID)"""
+        try:
+            if not self.current_user:
+                print("You must login first")
+                return
+            args_dict = self.arg_parser(args)
+            track_id = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Track ID: "))
+            self.song_cmds.save_song(track_id, self.current_user)
+        except Exception as e:
+            print(f"Error saving song: {e}")
+    # sus - Song Unsave (liked songs)
+
+    def cmd_sus(self, *args):
+        """Unsaves song from 'Liked Songs' (-v <TRACK_ID)"""
+        try:
+            if not self.current_user:
+                print("You must login first")
+                return
+            args_dict = self.arg_parser(args)
+            track_id = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Track ID: "))
+            self.song_cmds.unsave_song(track_id, self.current_user)
+        except Exception as e:
+            print(f"Error unsaving song: {e}")
+
     # spa - Song Playlist Add
-    # spr - Song Playlist Remove
-    # spl - Song Playlist List
-    # su - Song Unsave
-    # sl - Song List
 
-    # Playlist
+    def cmd_spa(self, *args):
+        """Adds song to playlist (-v <TRACK_ID> -p <PLAYLIST>)"""
+        try:
+            if not self.current_user:
+                print("You must login first")
+                return
+            args_dict = self.arg_parser(args)
+            track_id = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Track ID: "))
+            playlist_id = args_dict.get(
+                "-p") or self.strip_URL(input("Enter Playlist ID: "))
+            self.song_cmds.add_song_to_playlist(
+                track_id, playlist_id, current_user=self.current_user)
+            print("Added song(s) to playlist")
+        except Exception as e:
+            print(f"Error adding song to playlist: {e}")
 
-    # p - playlist details
-    # ptl - playlist track list
-    # ptx - playlist track exchange (replace)
-    # ppi - playlist playlist intersection
-    # ppu - playlist playlist union
-    # pc - playlist create
-    # pimg - playlist image
-    # pimgr - playlist image replace
-    # pd - delete playlist
-    # ptm - playlist track move
-    # pdd - playlist details description
-    # pdn - playlist details name
-    # pdp - playlist details public
-    # pti - playlist track(s) insert
-    # pti - playlist track(s) insert (in) spot (-s)
-    # ptd - playlist track delete
+        # spr - Song Playlist Remove
+    def cmd_spr(self, *args):
+        """Removes song from playlist (-v <TRACK_ID> -p <PLAYLIST>)"""
+        try:
+            if not self.current_user:
+                print("You must login first")
+                return
+            args_dict = self.arg_parser(args)
+            track_id = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Track ID: "))
+            playlist_id = args_dict.get(
+                "-p") or self.strip_URL(input("Enter Playlist ID: "))
+            self.song_cmds.remove_song_from_playlist(
+                track_id, playlist_id, current_user=self.current_user)
+            print("Removed song(s) to playlist")
+        except Exception as e:
+            print(f"Error removing song from playlist: {e}")
+        # spl - Song Playlist List
 
-    # User
+    def cmd_spl(self, *args):
+        """Lists whether or not a song is on a playlist (-v <TRACK_ID> -p <PLAYLIST>)"""
+        try:
+            args_dict = self.arg_parser(args)
+            track_id = args_dict.get(
+                "-v") or self.strip_URL(input("Enter Track ID: "))
+            playlist_id = args_dict.get(
+                "-p") or self.strip_URL(input("Enter Playlist ID: "))
+            print("Getting playlist tracks...")
+            playlist_tracks = self.playlist_cmds.get_playlist_track_names(
+                playlist_id)
+            print("Sifting for song...")
+            result = self.song_cmds.check_song_on_playlist(
+                track_id, playlist_tracks)
+            if result != "":
+                print(f"Song {result} found on playlist")
+            else:
+                print(f"Song not found on playlist")
+        except Exception as e:
+            print(f"Error finding song on playlist: {e}")
 
-    # u - Return User Information
-    # ulf - User List FollowerS
-    # ulfg - User List FollowinG
-    # ulp - User List Playlists (-a, -n, -v)
-    # ultt - User List Top Tracks (-n, -a)
-    # ulta - User List Top Artists (-n, -a)
-    # ufp - User follow playlist (-v)
-    # ufpu - User UNfollow playlist (-v)
-    # us - User Save Song (-v)
-    # usu - User Unsave Song (-v)
-    # usb - User Saved Albums
+        # sl - Song List
+
+        # Playlist
+
+        # p - playlist details
+        # ptl - playlist track list
+        # ptx - playlist track exchange (replace)
+        # ppi - playlist playlist intersection
+        # ppu - playlist playlist union
+        # pc - playlist create
+        # pimg - playlist image
+        # pimgr - playlist image replace
+        # pd - delete playlist
+        # ptm - playlist track move
+        # pdd - playlist details description
+        # pdn - playlist details name
+        # pdp - playlist details public
+        # pti - playlist track(s) insert
+        # pti - playlist track(s) insert (in) spot (-s)
+        # ptd - playlist track delete
+
+        # User
+
+        # u - Return User Information
+        # ulf - User List FollowerS
+        # ulfg - User List FollowinG
+        # ulp - User List Playlists (-a, -n, -v)
+        # ultt - User List Top Tracks (-n, -a)
+        # ulta - User List Top Artists (-n, -a)
+        # ufp - User follow playlist (-v)
+        # ufpu - User UNfollow playlist (-v)
+        # us - User Save Song (-v)
+        # usu - User Unsave Song (-v)
+        # usb - User Saved Albums
