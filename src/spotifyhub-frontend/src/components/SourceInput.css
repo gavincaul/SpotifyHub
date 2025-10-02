@@ -1,0 +1,75 @@
+.source-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  background: var(--bg);
+  transition: all 0.2s ease;
+}
+
+.source-input-container:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+}
+
+.source-input-container.drag-over {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
+.source-input {
+  flex: 1;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.clear-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.clear-button:hover {
+  color: var(--text);
+  background: var(--muted);
+  opacity: 1;
+}
+
+.drop-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--accent-rgb), 0.05);
+  color: var(--accent);
+  font-weight: 500;
+  pointer-events: none;
+  border: 2px dashed var(--accent);
+  border-radius: 4px;
+  z-index: 1;
+}

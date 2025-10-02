@@ -1,7 +1,7 @@
 class Artist:
-    def __init__(self, spotify_manager, artist_id):
+    def __init__(self, spotify_manager, artist_id, data=None):
         self.sp = spotify_manager.get_spotify_client()
-        self.data = None
+        self.data = data
         self.artist_id = artist_id
         self.spotify_manager = spotify_manager
 
@@ -72,3 +72,40 @@ class Artist:
             a = Album(spotify_manager=self.spotify_manager, album_id=a["id"])
             album_list.append(a)
         return album_list
+
+
+'''
+{
+  "external_urls": {
+    "spotify": "https://open.spotify.com/artist/5Z3IWpvwOvoaWodujHw7xh"
+  },
+  "followers": {
+    "href": null,
+    "total": 130482
+  },
+  "genres": [],
+  "href": "https://api.spotify.com/v1/artists/5Z3IWpvwOvoaWodujHw7xh?locale=en-US%2Cen%3Bq%3D0.5",
+  "id": "5Z3IWpvwOvoaWodujHw7xh",
+  "images": [
+    {
+      "url": "https://i.scdn.co/image/ab6761610000e5ebbe862dadd4231c1735bb452a",
+      "height": 640,
+      "width": 640
+    },
+    {
+      "url": "https://i.scdn.co/image/ab67616100005174be862dadd4231c1735bb452a",
+      "height": 320,
+      "width": 320
+    },
+    {
+      "url": "https://i.scdn.co/image/ab6761610000f178be862dadd4231c1735bb452a",
+      "height": 160,
+      "width": 160
+    }
+  ],
+  "name": "Dan Deacon",
+  "popularity": 41,
+  "type": "artist",
+  "uri": "spotify:artist:5Z3IWpvwOvoaWodujHw7xh"
+}
+'''

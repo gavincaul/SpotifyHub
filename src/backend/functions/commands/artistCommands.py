@@ -5,16 +5,26 @@ from functions.models.search import Search
 class ArtistCommands:
     def __init__(self, spotify_manager):
         self.spotify_manager = spotify_manager
-
-    artist_list = {}
+        self.artist_cache = {}
 
     def check_artist(self, artist_id=None):
-        if artist_id in self.artist_list:
-            return self.artist_list[artist_id]
+        if artist_id in self.artist_cache:
+            return self.artist_cache[artist_id]
 
-        self.artist_list[artist_id] = Artist(
+        self.artist_cache[artist_id] = Artist(
             self.spotify_manager, artist_id=artist_id)
-        return self.artist_list[artist_id]
+        return self.artist_cache[artist_id]
+    
+    def check_exists(self, artist_id):
+        if artist_id in self.artist_cache:
+            return True
+        try:
+            data = self.spotify_manager.sp.artist(artist_id)
+            artist_obj = Artist(self.spotify_manager, artist_id, data=data)
+            self.artist_cache[artist_id] = artist_obj
+            return True
+        except self.spotify_manager.sp.exceptions.SpotifyException as e:
+            return e.http_status not in [400, 404]
 
     def get_artist_info(self, artist_id=None):
 

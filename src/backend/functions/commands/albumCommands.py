@@ -3,15 +3,26 @@ from functions.models.album import Album
 class AlbumCommands:
     def __init__(self, spotify_manager):
         self.spotify_manager = spotify_manager
-
-    album_list = {}
+        self.album_cache = {}
 
     def check_album(self, album_id=None):
-        if album_id in self.album_list:
-            return self.album_list[album_id]
+        if album_id in self.album_cache:
+            return self.album_cache[album_id]
     
-        self.album_list[album_id] = Album(self.spotify_manager, album_id)
-        return self.album_list[album_id]
+        self.album_cache[album_id] = Album(self.spotify_manager, album_id)
+        return self.album_cache[album_id]
+
+    def check_exists(self, album_id):
+        if album_id in self.album_cache:
+            return True
+        try:
+            data = self.spotify_manager.sp.album(album_id)
+            album_obj = Album(self.spotify_manager, album_id, data=data)
+            self.album_cache[album_id] = album_obj
+            return True
+        except self.spotify_manager.sp.exceptions.SpotifyException as e:
+            return e.http_status not in [400, 404]
+        
 
     def get_album_info(self, album_id=None):
 

@@ -2,9 +2,9 @@
 
 
 class Song:
-    def __init__(self, spotify_manager, track_id):
+    def __init__(self, spotify_manager, track_id, data=None):
         self.sp = spotify_manager.get_spotify_client()
-        self.data = None
+        self.data = data
         self.track_id = track_id
         self.spotify_manager = spotify_manager
 
@@ -64,7 +64,6 @@ class Song:
         return self.track_id
 
 '''
-Example JSON
 {
     "album": {
         "album_type": "album",

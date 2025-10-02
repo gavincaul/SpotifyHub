@@ -1,10 +1,10 @@
 
 
 class User:
-    def __init__(self, spotify_manager, user_id):
+    def __init__(self, spotify_manager, user_id, data=None):
         self.sp = spotify_manager.get_spotify_client()
         self.spotify_manager = spotify_manager
-        self.data = None
+        self.data = data
         self.playlists = []
         self.user_id = user_id
 
@@ -42,6 +42,32 @@ class User:
         return self.playlists
     
     
-
-    
+'''
+{
+  "display_name": "gavin caulfield",
+  "external_urls": {
+    "spotify": "https://open.spotify.com/user/9yiidfk1ydpewq4u1ge28fidh"
+  },
+  "followers": {
+    "href": null,
+    "total": 50
+  },
+  "href": "https://api.spotify.com/v1/users/9yiidfk1ydpewq4u1ge28fidh",
+  "id": "9yiidfk1ydpewq4u1ge28fidh",
+  "images": [
+    {
+      "url": "https://i.scdn.co/image/ab6775700000ee85d0cbc08494544d02f6bd9e2a",
+      "height": 300,
+      "width": 300
+    },
+    {
+      "url": "https://i.scdn.co/image/ab67757000003b82d0cbc08494544d02f6bd9e2a",
+      "height": 64,
+      "width": 64
+    }
+  ],
+  "type": "user",
+  "uri": "spotify:user:9yiidfk1ydpewq4u1ge28fidh"
+}
+'''
     

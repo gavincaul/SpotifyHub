@@ -1,0 +1,16 @@
+.dz {
+  border: 2px dashed var(--muted);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+  min-height: 60px;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.dz .dz-inner { padding: 12px; }
+
+.dz .dz-placeholder { opacity: 0.8; }
+
+.dz-over { border-color: var(--accent); background: rgba(29,185,84,0.12); }

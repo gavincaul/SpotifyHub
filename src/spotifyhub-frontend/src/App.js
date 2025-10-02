@@ -1,23 +1,34 @@
-import logo from './logo.svg';
-import './App.css';
+import Home from "./pages/Home.js";
+import Playlists from "./pages/Playlists.js";
+import Library from "./pages/Library.js";
+import User from "./pages/User.js";
+import Social from "./pages/Social.js";
+import Live from "./pages/Live.js";
+import Games from "./pages/Games.js";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "./theme/ThemeContext.tsx";
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <DndProvider backend={HTML5Backend}>
+        <ThemeProvider>
+          <Router>
+            <Routes>
+              <Route exact path="/" element={<Home />} />
+              <Route exact path="/playlists" element={<Playlists />} />
+              <Route exact path="/library" element={<Library />} />
+              <Route exact path="/user" element={<User />} />
+              <Route exact path="/social" element={<Social />} />
+              <Route exact path="/live" element={<Live />} />
+              <Route exact path="/games" element={<Games />} />
+              <Route exact path="*" element={<Home />} />
+            </Routes>
+          </Router>
+        </ThemeProvider>
+      </DndProvider>
     </div>
   );
 }

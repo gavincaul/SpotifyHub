@@ -4,15 +4,25 @@ from functions.models.song import Song
 class SongCommands:
     def __init__(self, spotify_manager):
         self.spotify_manager = spotify_manager
-
-    song_list = {}
+        self.song_cache = {}
 
     def check_song(self, song_id=None):
-        if song_id in self.song_list:
-            return self.song_list[song_id]
+        if song_id in self.song_cache:
+            return self.song_cache[song_id]
 
-        self.song_list[song_id] = Song(self.spotify_manager, track_id=song_id)
-        return self.song_list[song_id]
+        self.song_cache[song_id] = Song(self.spotify_manager, track_id=song_id)
+        return self.song_cache[song_id]
+
+    def check_exists(self, song_id):
+        if song_id in self.song_cache:
+            return True
+        try:
+            data = self.spotify_manager.sp.track(song_id)
+            song_obj = Song(self.spotify_manager, song_id, data=data)
+            self.song_cache[song_id] = song_obj
+            return True
+        except self.spotify_manager.sp.exceptions.SpotifyException as e:
+            return e.http_status not in [400, 404]
 
     def get_song_info(self, song_id=None):
         song_obj = self.check_song(song_id)

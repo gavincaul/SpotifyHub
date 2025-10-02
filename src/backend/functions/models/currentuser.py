@@ -1,16 +1,44 @@
 from .user import User
+from functions.database.currentUserManager import SettingsManager
 
 
 class CurrentUser(User):
-    def __init__(self, spotify_manager):
+    def __init__(self, spotify_manager, data=None):
         user_id = spotify_manager.get_current_user_id()
+        self.data = data
         if not user_id:
             raise ValueError("Unable to fetch current user ID.")
         super().__init__(spotify_manager, user_id)
+        self.user_settings = SettingsManager(
+            user_id=self.user_id, current_user=self)
+
+
+    def get_user_settings(self):
+        if self.user_settings is None:
+            self.user_settings = SettingsManager(
+                user_id=self.user_id, current_user=self)
+        return self.user_settings.settings  
+
+
+    def get_specific_user_settings(self, setting, default=None):
+        if self.user_settings is None:
+            self.user_settings = SettingsManager(
+                user_id=self.user_id, current_user=self)
+
+        return self.user_settings.get(key="properties/" + setting, default=default)
+
+    def set_specific_user_settings(self, setting, value, default=None):
+        if self.user_settings is None:
+            self.user_settings = SettingsManager(
+                user_id=self.user_id, current_user=self)
+
+        self.user_settings.set(key="properties/" + setting, value=value, default=default)
+        
+
 
     def get_user_top_tracks(self, total=None, time_range="medium_term"):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
 
         top_tracks = []
         limit = 50
@@ -36,7 +64,7 @@ class CurrentUser(User):
 
     def get_user_top_artists(self, total=None, time_range="medium_term"):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
 
         top_artists = []
         limit = 50
@@ -62,7 +90,7 @@ class CurrentUser(User):
 
     def follow_playlist(self, playlist_id):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.current_user_follow_playlist(playlist_id)
             print(f"Successfully followed playlist")
@@ -71,7 +99,7 @@ class CurrentUser(User):
 
     def unfollow_playlist(self, playlist_id):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.current_user_unfollow_playlist(playlist_id)
             print(f"Successfully unfollowed playlist")
@@ -80,7 +108,7 @@ class CurrentUser(User):
 
     def get_user_following(self, total=None):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
 
         following = []
         limit = 50
@@ -110,7 +138,7 @@ class CurrentUser(User):
 
     def saved_albums_add(self, album_ids):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.current_user_saved_albums_add(album_ids)
         except Exception as e:
@@ -118,7 +146,7 @@ class CurrentUser(User):
 
     def saved_albums_remove(self, album_ids):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.current_user_saved_albums_delete(album_ids)
         except Exception as e:
@@ -126,7 +154,7 @@ class CurrentUser(User):
 
     def saved_tracks_add(self, track_ids):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.current_user_saved_tracks_add(track_ids)
         except Exception as e:
@@ -134,7 +162,7 @@ class CurrentUser(User):
 
     def saved_tracks_delete(self, track_ids):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.current_user_saved_tracks_delete(track_ids)
         except Exception as e:
@@ -142,7 +170,7 @@ class CurrentUser(User):
 
     def playlist_add_items(self, track_id, playlist_id, position=None):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.playlist_add_items(
                 playlist_id, [track_id], position)
@@ -151,9 +179,25 @@ class CurrentUser(User):
 
     def playlist_remove_items(self, track_id, playlist_id, position=None):
         if self.data is None:
-            self.data = self.sp.user(self.user_id)
+            self.data = self.sp.current_user()
         try:
             self.sp.playlist_remove_all_occurrences_of_items(
                 playlist_id, [track_id], position)
         except Exception as e:
             print(f"Unable to add track(s) to playlist: {e}")
+
+    def create_playlist(self, playlist_name, description, public, collaborative):
+        if self.data is None:
+            self.data = self.sp.current_user()
+        result = self.sp.user_playlist_create(self.user_id, playlist_name, public, collaborative, description)
+        return result["id"]
+    
+    def delete_playlist(self, playlist_id):
+        if self.data is None:
+            self.data = self.sp.current_user()
+        self.sp.current_user_unfollow_playlist(playlist_id)
+        return True
+
+    '''
+    
+    '''
