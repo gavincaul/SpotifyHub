@@ -1,11 +1,11 @@
-from functions.models.currentuser import CurrentUser
-from functions.database.currentUserManager import SettingsManager
+from ..models.currentuser import CurrentUser
+from ..database.currentUserManager import SettingsManager
+
 
 class CurrentUserCommands:
     def __init__(self, spotify_manager):
         self.spotify_manager = spotify_manager
         self.current_user = None
-
 
     def cmd_login(self):
         """Login and set the current user"""
@@ -21,7 +21,7 @@ class CurrentUserCommands:
                 print("Failed to get user info after login.")
         else:
             print("Login failed or cancelled.")
-        
+
     def saved_albums_add(self, album_id=None, current_user=None):
         try:
             current_user.saved_albums([album_id])
@@ -32,15 +32,12 @@ class CurrentUserCommands:
     def create_user_playlist(self, playlist_name, description, public, collaborative, current_user=None):
         try:
             if description is None:
-                description=""
+                description = ""
             if current_user is None:
-                current_user=self.current_user
+                current_user = self.current_user
             return current_user.create_playlist(playlist_name, description, public, collaborative)
         except Exception as e:
             print(f"Unable to create playlist: {e}")
 
     def delete_user_playlist(self, playlist_id):
         return self.current_user.delete_playlist(playlist_id)
-
-
-

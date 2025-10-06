@@ -1,5 +1,5 @@
 from .user import User
-from functions.database.currentUserManager import SettingsManager
+from ..database.currentUserManager import SettingsManager
 
 
 class CurrentUser(User):
@@ -12,13 +12,11 @@ class CurrentUser(User):
         self.user_settings = SettingsManager(
             user_id=self.user_id, current_user=self)
 
-
     def get_user_settings(self):
         if self.user_settings is None:
             self.user_settings = SettingsManager(
                 user_id=self.user_id, current_user=self)
-        return self.user_settings.settings  
-
+        return self.user_settings.settings
 
     def get_specific_user_settings(self, setting, default=None):
         if self.user_settings is None:
@@ -32,9 +30,8 @@ class CurrentUser(User):
             self.user_settings = SettingsManager(
                 user_id=self.user_id, current_user=self)
 
-        self.user_settings.set(key="properties/" + setting, value=value, default=default)
-        
-
+        self.user_settings.set(key="properties/" + setting,
+                               value=value, default=default)
 
     def get_user_top_tracks(self, total=None, time_range="medium_term"):
         if self.data is None:
@@ -189,9 +186,10 @@ class CurrentUser(User):
     def create_playlist(self, playlist_name, description, public, collaborative):
         if self.data is None:
             self.data = self.sp.current_user()
-        result = self.sp.user_playlist_create(self.user_id, playlist_name, public, collaborative, description)
+        result = self.sp.user_playlist_create(
+            self.user_id, playlist_name, public, collaborative, description)
         return result["id"]
-    
+
     def delete_playlist(self, playlist_id):
         if self.data is None:
             self.data = self.sp.current_user()

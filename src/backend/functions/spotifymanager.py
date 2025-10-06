@@ -23,7 +23,12 @@ class SpotifyManager:
             scope=self.scope,
             cache_path=".cache"  # token cache file (can customize per user)
         )
-        self.sp = None  # will hold spotipy.Spotify client after login
+        self.sp = spotipy.Spotify(
+            auth_manager=spotipy.SpotifyClientCredentials(
+                client_id=self.client_id,
+                client_secret=self.client_secret
+            )
+        )  # will hold spotipy.Spotify client after login
 
     def login_oauth(self):
         """Starts the OAuth flow to login user and get token."""
@@ -75,7 +80,3 @@ class SpotifyManager:
         except spotipy.exceptions.SpotifyException as e:
             print(f"Insufficient User ID. {e.msg}.")
             return -1
-        
-
-
-

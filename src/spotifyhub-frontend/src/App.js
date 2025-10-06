@@ -5,6 +5,7 @@ import User from "./pages/User.js";
 import Social from "./pages/Social.js";
 import Live from "./pages/Live.js";
 import Games from "./pages/Games.js";
+import TestAPI from "./pages/TestAPI.js";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./theme/ThemeContext.tsx";
 import { DndProvider } from 'react-dnd';
@@ -24,6 +25,7 @@ function App() {
               <Route exact path="/social" element={<Social />} />
               <Route exact path="/live" element={<Live />} />
               <Route exact path="/games" element={<Games />} />
+              <Route exact path="/testAPI" element={<TestAPI />} />
               <Route exact path="*" element={<Home />} />
             </Routes>
           </Router>

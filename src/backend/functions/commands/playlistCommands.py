@@ -1,4 +1,4 @@
-from functions.models.playlist import Playlist
+from ..models.playlist import Playlist
 
 
 class PlaylistCommands:
@@ -79,5 +79,6 @@ class PlaylistCommands:
 
     def move_track(self, playlist_id, from_position, to_position):
         playlist = self.check_playlist(playlist_id)
-        if to_position>1: to_position+=1
+        if to_position > 1:
+            to_position += 1
         return playlist.move_track(from_position, to_position)

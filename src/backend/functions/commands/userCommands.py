@@ -1,4 +1,5 @@
-from functions.models.user import User
+from ..models.user import User
+
 
 class UserCommands:
     def __init__(self, spotify_manager):
@@ -8,10 +9,10 @@ class UserCommands:
     def check_user(self, user_id=None):
         if user_id in self.user_cache:
             return self.user_cache[user_id]
-    
-        self.self.user_cache[user_id] = User(self.spotify_manager, user_id=user_id)
+
+        self.self.user_cache[user_id] = User(
+            self.spotify_manager, user_id=user_id)
         return self.user_cache[user_id]
-    
 
     def check_exists(self, user_id):
         if user_id in self.user_cache:

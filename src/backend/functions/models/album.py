@@ -1,6 +1,5 @@
 
 
-
 class Album:
     def __init__(self, spotify_manager, album_id, data=None):
         self.sp = spotify_manager.get_spotify_client()
@@ -9,54 +8,95 @@ class Album:
         self.spotify_manager = spotify_manager
 
     def get_album(self):
-        if self.data == None:
+        if self.data is None:
             self.data = self.sp.album(self.album_id)
         return self.data
 
+    def get_album_info(self):
+        self.get_album()
+        data = {
+            "id": self.album_id,
+            "name": self.get_album_name(),
+            "artists": self.get_album_artist_ids(),
+            "type": self.get_album_type(),
+            "total": self.get_album_total_tracks(),
+            "cover": self.get_album_cover(),
+            "release_date": self.get_album_release_date(),
+        }
+        return data
+
     def get_album_name(self):
-        if self.data == None:
-            self.data = self.get_album()
-        return self.data["name"]
+        self.get_album()
+        return str(self.data.get("name", "Unknown Name"))
 
     def get_album_type(self):
-        if self.data == None:
-            self.data = self.get_album()
-        return self.data["type"]
+        self.get_album()
+        return str(self.data.get("type", "Unknown Type"))
 
     def get_album_total_tracks(self):
-        if self.data == None:
-            self.data = self.get_album()
-        return self.data["total_tracks"]
+        self.get_album()
+        return self.data.get("total_tracks", 0)
 
-    def get_album_artists(self):
-        from .artist import Artist
-        if self.data == None:
-            self.data = self.get_album()
-        artist_array = []
-        
-        for artist in self.data["artists"]:
-            artist_array.append(
-                Artist(spotify_manager=self.spotify_manager, artist_id=artist["id"]))
-        return artist_array
-
-    def get_album_tracks(self):
-        from .song import Song
-        if self.data == None:
-            self.data = self.get_album()
-        track_array = []
-        for track in self.data["tracks"]["items"]:
-            track_array.append(
-                Song(spotify_manager=self.spotify_manager, track_id=track["id"]))
-        return track_array
+    def get_album_release_date(self):
+        self.get_album()
+        return str(self.data.get("release_date", "Unknown Release Date"))
 
     def get_album_cover(self):
-        if self.data == None:
-            self.data = self.get_album()
-        try:
-            return self.data["images"][0]["url"]
-        except TypeError as e:
-            print("ERROR: img is null {e}")
-            return "https://static.thenounproject.com/png/3647578-200.png"
+        self.get_album()
+        images = self.data.get("images") or []
+        if images and len(images) > 0:
+            return images[0].get("url", "https://static.thenounproject.com/png/3647578-200.png")
+        return "https://static.thenounproject.com/png/3647578-200.png"
+
+    def get_album_artist_ids(self):
+        self.get_album()
+        artists = self.data.get("artists") or []
+        return [artist.get("id") for artist in artists if "id" in artist]
+
+    def get_album_artist_data(self):
+        self.get_album()
+        artists = self.data.get("artists") or []
+        return artists
+
+    def get_album_artist_objects(self):
+        from .artist import Artist
+        self.get_album()
+        artists = self.data.get("artists") or []
+        return [
+            Artist(spotify_manager=self.spotify_manager,
+                   artist_id=artist.get("id"))
+            for artist in artists if "id" in artist
+        ]
+
+    def get_album_tracks(self, positions=False):
+        self.get_album()  # ensures self.data is populated
+        tracks_data = self.data.get("tracks", {}).get("items", [])
+
+        if positions:
+            # Map track_number => track info
+            track_dict = {}
+            for t in tracks_data:
+                track_dict[t["track_number"]] = {
+                    "id": t.get("id"),
+                    "name": t.get("name", "Unknown Name"),
+                    "artists": [artist.get("name", "Unknown Artist") for artist in t.get("artists", [])],
+                    "duration_ms": t.get("duration_ms"),
+                    "href": t.get("external_urls", {}).get("spotify"),
+                }
+            return track_dict
+        else:
+            # Return a simple list
+            track_list = []
+            for t in tracks_data:
+                track_list.append({
+                    "id": t.get("id"),
+                    "name": t.get("name", "Unknown Name"),
+                    "artists": [artist.get("name", "Unknown Artist") for artist in t.get("artists", [])],
+                    "duration_ms": t.get("duration_ms"),
+                    "href": t.get("external_urls", {}).get("spotify"),
+                    "track_number": t.get("track_number"),
+                })
+            return track_list
 
 
 '''

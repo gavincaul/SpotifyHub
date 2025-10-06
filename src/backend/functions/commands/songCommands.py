@@ -1,4 +1,4 @@
-from functions.models.song import Song
+from ..models.song import Song
 
 
 class SongCommands:
