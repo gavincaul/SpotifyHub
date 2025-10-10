@@ -1,7 +1,32 @@
 {
-        "files.exclude": {
-        "**/__pycache__": true,
-        "**/__init__.py": true,
-        "**/*.pyc": true
-    }
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/__init__.py": true,
+    "**/*.pyc": true,
+    "**/.DS_Store": true,
+    "**/.cache": true,
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+    "**/dist/**": true,
+    "**/__pycache__": true,
+    "**/__init__.py": true,
+    "**/*.pyc": true,
+    "**/.DS_Store": true,
+    "**/.cache": true
+  },
+  "search.exclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+    "**/dist/**": true,
+    "**/__pycache__": true,
+    "**/__init__.py": true,
+    "**/*.pyc": true,
+    "**/.DS_Store": true,
+    "**/.cache": true
+  },
+  "typescript.tsserver.maxTsServerMemory": 3072,
+  "python.analysis.exclude": ["**/__pycache__", "**/node_modules"]
 }

@@ -1,6 +1,6 @@
 from ..models.artist import Artist
 from ..models.search import Search
-from ...errors import *
+from ...utils.errors import *
 
 
 class ArtistCommands:

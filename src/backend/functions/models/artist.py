@@ -1,3 +1,6 @@
+from ...utils.utils import missing_file_url
+
+
 class Artist:
     def __init__(self, spotify_manager, artist_id, data=None):
         self.sp = spotify_manager.get_spotify_client()
@@ -65,8 +68,8 @@ class Artist:
         self.get_artist()
         images = self.data.get("images") or []
         if images and len(images) > 0:
-            return images[0].get("url", "https://static.thenounproject.com/png/3647578-200.png")
-        return "https://static.thenounproject.com/png/3647578-200.png"
+            return images[0].get("url", missing_file_url)
+        return missing_file_url
 
     def get_artist_top_tracks(self, country="US", raw=False):
         self.get_artist()
@@ -77,10 +80,16 @@ class Artist:
             return tracks
         track_list = []
         for t in tracks:
-            track_list.append({"name": t.get("name", "Unknown Name"), "artists": [
-                              a.get("name", "Unknown Artist") for a in t["artists"]],
-                "popularity": t.get("popularity", "Unknown Popularity"),
-                "id": t.get("id", "Unknown ID")})
+            track_list.append({
+                "id": t["id"],
+                "name": t["name"],
+                "artist_data": [{"name": artist["name"], "id": artist["id"]} for artist in t["artists"]],
+                "album_data": {"name": t["album"]["name"], "id": t["album"]["id"], "images": {"large": t["album"]["images"][0]["url"] if len(t["album"]["images"]) > 0 else missing_file_url, "medium": t["album"]["images"][1]["url"] if len(t["album"]["images"]) > 1 else missing_file_url, "small": t["album"]["images"][2]["url"] if len(t["album"]["images"]) > 2 else missing_file_url}},
+                "duration_ms": t["duration_ms"],
+                "explicit": t["explicit"],
+                "popularity": t["popularity"],
+                "url": t["external_urls"].get("spotify", "")
+            })
         return track_list
 
     def get_artist_albums(self, include_groups=None, limit=20, offset=0):
@@ -92,9 +101,17 @@ class Artist:
             self.artist_id, include_groups=include_groups_str, limit=limit, offset=offset)["items"]
         album_list = []
         for a in albums:
-            album_list.append({"type": a.get("album_type"), "group": a.get("album_group"), "name": a.get("name", "Unknown Name"), "artists": [
-                              t.get("name", "Unknown Artist") for t in a["artists"]], "url": a["external_urls"].get("spotify", "Unknown URL"),
-                "imageURL": a["images"][0].get("url", "https://static.thenounproject.com/png/3647578-200.png"), })
+            album_list.append({
+                "id": a.get("id", "Unknown Id"),
+                "name": a.get("name", "Unknown Album"),
+                "artists": [{"id": a.get("id", ""), "name": a.get("name", "")} for a in a.get("artists", [])],
+                "genres": a.get("genres", []),
+                "release_date": a.get("release_date", ""),
+                "total_tracks": a.get("total_tracks", 0),
+                "url": a.get("external_urls", {}).get("spotify", ""),
+                "type": a.get("album_type", ""),
+                "images": {"small": a["images"][2].get("url", "") if a["images"] else missing_file_url, "medium": a["images"][1].get("url", "") if a["images"] else missing_file_url, "large": a["images"][0].get("url", "") if a["images"] else missing_file_url}
+            })
         return album_list
 
 

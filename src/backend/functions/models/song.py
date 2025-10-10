@@ -1,5 +1,7 @@
 
 
+from ...utils.utils import missing_file_url
+
 
 class Song:
     def __init__(self, spotify_manager, track_id, data=None):
@@ -14,54 +16,68 @@ class Song:
         return self.data
 
     def get_track_name(self):
-        if self.data is None:
-            self.data = self.get_track()
+        self.get_track()
         return self.data["name"]
 
     def get_track_album(self):
-        from .album import Album
-        if self.data is None:
-            self.data = self.get_track()
-        return Album(spotify_manager=self.spotify_manager, album_id=self.data["album"]["id"])
+        self.get_track()
+        album = {"name": self.data["album"]["name"],
+                 "id": self.data["album"]["id"]}
+        return album
 
-    def get_track_length_ms(self):
-        if self.data is None:
-            self.data = self.get_track()
+    def get_track_length(self):
+        self.get_track()
+
         return self.data["duration_ms"]  # in milliseconds
 
     def get_track_popularity(self):
-        if self.data is None:
-            self.data = self.get_track()
+        self.get_track()
+
         return self.data["popularity"]
 
     def get_track_image(self):
-        if self.data is None:
-            self.data = self.get_track()
+        self.get_track()
+
         try:
-            return self.data["images"][0]["url"]
+            album_images = self.data.get("album", {}).get("images", [])
+            if album_images and len(album_images) > 0:
+                return {
+                    "large": album_images[0].get("url", missing_file_url),
+                    "medium": album_images[1].get("url", missing_file_url) if len(album_images) > 1 else missing_file_url,
+                    "small": album_images[2].get("url", missing_file_url) if len(album_images) > 2 else missing_file_url,
+                }
+            return {
+                "large": missing_file_url,
+                "medium": missing_file_url,
+                "small": missing_file_url,
+            }
         except TypeError as e:
             print("ERROR: img is null {e}")
-            return "https://static.thenounproject.com/png/3647578-200.png"
-        
+            return missing_file_url
+
     def get_track_artists(self):
-        from .artist import Artist
-        if self.data is None:
-            self.data = self.get_track()
-        artists = [Artist(spotify_manager=self.spotify_manager, artist_id=artist["id"]) for artist in self.data["artists"]]
+        self.get_track()
+        artists = [{"name": artist["name"], "id": artist["id"]}
+                   for artist in self.data["artists"]]
         return artists
-    
+
     def is_track_explicit(self):
-        if self.data is None:
-            self.data = self.get_track()
+        self.get_track()
+
         return self.data["explicit"]
-    
+
     def get_track_url(self):
-        if self.data is None:
-            self.data = self.get_track()
+        self.get_track()
+
         return self.data["external_urls"]["spotify"]
-    
+
     def get_track_id(self):
         return self.track_id
+
+    def get_track_number(self):
+        self.get_track()
+        return self.data["track_number"]
+
 
 '''
 {

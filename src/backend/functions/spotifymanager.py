@@ -1,82 +1,100 @@
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+from spotipy.cache_handler import RedisCacheHandler
+from ..utils.redis_client import redis_client
+
 
 
 class SpotifyManager:
     def __init__(self, client_id=None, client_secret=None, redirect_uri=None, scope=None):
-
         BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
         load_dotenv(BASE_DIR / "config/.env")
-        self.scope = scope
+
         self.client_id = client_id or os.getenv("SPOTIFY_CLIENT_ID")
         self.client_secret = client_secret or os.getenv(
             "SPOTIFY_CLIENT_SECRET")
         self.redirect_uri = redirect_uri or os.getenv("SPOTIFY_REDIRECT_URI")
-
+        self.scope = scope or os.getenv("SPOTIFY_SCOPE")
+        self.redis_client = redis_client
+        # Default public client
+        self.sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+            client_id=self.client_id,
+            client_secret=self.client_secret
+        ))
+        cache_handler = RedisCacheHandler(
+            self.redis_client,
+        )
+        self.current_user_id = None
         self.sp_oauth = SpotifyOAuth(
             client_id=self.client_id,
             client_secret=self.client_secret,
             redirect_uri=self.redirect_uri,
             scope=self.scope,
-            cache_path=".cache"  # token cache file (can customize per user)
+            cache_handler=cache_handler
         )
-        self.sp = spotipy.Spotify(
-            auth_manager=spotipy.SpotifyClientCredentials(
-                client_id=self.client_id,
-                client_secret=self.client_secret
-            )
-        )  # will hold spotipy.Spotify client after login
+        self.user_cache_handler = None
 
-    def login_oauth(self):
-        """Starts the OAuth flow to login user and get token."""
-        token_info = self.sp_oauth.get_cached_token()
-        if not token_info:
-            # No cached token, ask user to login
-            auth_url = self.sp_oauth.get_authorize_url()
-            print(f"Please navigate here and authorize: {auth_url}")
-            response = input("Paste the redirected URL here: ").strip()
+    def _create_oauth(self, user_id=None):
+        """Create SpotifyOAuth with Redis caching per user"""
+        key = f"spotify_token:{user_id}" if user_id else None
+        if key:
+            self.current_user_id = user_id
+        cache_handler = RedisCacheHandler(self.redis_client, key=key)
+        self.sp_oauth = SpotifyOAuth(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            redirect_uri=self.redirect_uri,
+            scope=self.scope,
+            cache_handler=cache_handler
+        )
+        self.user_cache_handler = cache_handler
 
-            code = self.sp_oauth.parse_response_code(response)
-            if code:
-                token_info = self.sp_oauth.get_access_token(code)
-            else:
-                print("Invalid response URL, login failed.")
-                return False
+    def get_auth_url(self, user_id=None):
+        self._create_oauth(user_id)
+        return self.sp_oauth.get_authorize_url()
 
-        access_token = token_info['access_token']
+    def login_with_code(self, code: str):
+        if not self.sp_oauth:
+            raise Exception("OAuth not initialized. Call get_auth_url first.")
+        token_info = self.sp_oauth.get_access_token(code)
+        access_token = token_info["access_token"]
+
+        # Use user-specific client
         self.sp = spotipy.Spotify(auth=access_token)
-        return True
+        self.current_user_id = self.get_current_user_id()
+
+        return self.current_user_id
+
+    def logout(self):
+        """Clear Spotify session and remove cached token from Redis"""
+        # Reset Spotify client to public credentials
+        self.sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+            client_id=self.client_id,
+            client_secret=self.client_secret
+        ))
+        # Delete token from Redis if cached
+        if self.user_cache_handler and self.current_user_id:
+            try:
+                self.redis_client.delete(
+                    f"spotify_token:{self.current_user_id}")
+                print(f"✅ Deleted Redis token for {self.current_user_id}")
+            except Exception as e:
+                print(f"⚠️ Failed to delete Redis token: {e}")
+
+        # Clear OAuth and user info
+        self.current_user_id = None
+        self.user_cache_handler = None
+        self.sp_oauth = None
 
     def get_spotify_client(self):
-        if not self.sp:
-            # If no login, fallback to client credentials (public data only)
-            self.sp = spotipy.Spotify(auth_manager=spotipy.SpotifyClientCredentials(
-                client_id=self.client_id,
-                client_secret=self.client_secret
-            ))
         return self.sp
 
     def get_current_user_id(self):
-        if not self.sp:
-            self.get_spotify_client()
         try:
             user = self.sp.current_user()
-            return user['id']
+            return user["id"]
         except spotipy.exceptions.SpotifyException:
             return None
-
-    def get_user_profile(self, uid):
-        if not self.sp:
-            self.get_spotify_client()
-        if not uid:
-            print("Invalid User ID")
-            return -1
-        try:
-            user = self.sp.user(uid)
-            return user
-        except spotipy.exceptions.SpotifyException as e:
-            print(f"Insufficient User ID. {e.msg}.")
-            return -1

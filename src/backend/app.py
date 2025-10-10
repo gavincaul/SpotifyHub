@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from .errors import APIError
+from .utils.errors import APIError
 import os
 from flask_cors import CORS
 from .functions.commands.playlistCommands import PlaylistCommands
@@ -12,18 +12,18 @@ from .functions.commands.songCommands import SongCommands
 from .functions.commands.userCommands import UserCommands
 
 # routes
-from .routes.playlistRoutes import playlist_bp
-from .routes.albumRoutes import album_bp
-from .routes.artistRoutes import artist_bp
-from .routes.currentUserRoutes import currentuser_bp
-from .routes.searchRoutes import search_bp
-from .routes.songRoutes import song_bp
-from .routes.userRoutes import user_bp
-
+from .functions.routes.playlistRoutes import playlist_bp
+from .functions.routes.albumRoutes import album_bp
+from .functions.routes.artistRoutes import artist_bp
+from .functions.routes.currentUserRoutes import currentuser_bp
+from .functions.routes.searchRoutes import search_bp
+from .functions.routes.songRoutes import song_bp
+from .functions.routes.userRoutes import user_bp
 
 def create_app():
+
     app = Flask(__name__)
-    CORS(app, origins="http://localhost:3000", supports_credentials=True)
+    CORS(app, origins="http://localhost:3000", supports_credentials=True,   methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],)
 
     @app.errorhandler(APIError)
     def handle_api_error(error):

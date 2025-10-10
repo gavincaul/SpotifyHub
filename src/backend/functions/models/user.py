@@ -1,4 +1,6 @@
 
+from ...utils.utils import missing_file_url
+
 
 class User:
     def __init__(self, spotify_manager, user_id, data=None):
@@ -8,40 +10,49 @@ class User:
         self.playlists = []
         self.user_id = user_id
 
-    def get_user_profile(self):
+    def get_user(self):
         if self.data is None:
             self.data = self.sp.user(self.user_id)
         return self.data
-    
+
     def get_user_playlists(self, total=None):
-        from .playlist import Playlist
         if not self.playlists:
             offset = 0
             fetched = 0
 
-        
+            playlists = []
             if not total:
                 first_batch = self.sp.user_playlists(self.user_id, limit=50)
                 total = first_batch["total"]
 
             while fetched < total:
                 limit = min(50, total - fetched)
-                user_playlists = self.sp.user_playlists(self.user_id, limit=limit, offset=offset)
-
+                user_playlists = self.sp.user_playlists(
+                    self.user_id, limit=limit, offset=offset)
                 for playlist in user_playlists["items"]:
-                    self.playlists.append(
-                        Playlist(spotify_manager=self.spotify_manager, playlist_id=playlist["id"])
-                    )
+                    if playlist is not None:
 
+                        playlists.append({
+                            "name": playlist.get("name", "Unknown Name"),
+                            "owner": {"name": playlist.get("owner", {}).get("display_name", "Unknown Owner"), "id": playlist.get("owner", {}).get("id", "Unknown Id")},
+                            "id": playlist.get("id", "Unknown Id"),
+                            "public": playlist.get("public", True),
+                            "collaborative": playlist.get("collaborative", False),
+                            "track_count": playlist.get("tracks", {}).get("total", 0),
+                            "description": playlist.get("description", ""),
+                            "url": playlist.get("external_urls", {}).get("spotify", ""),
+                            "img": playlist.get("images", [])[0].get("url", missing_file_url) if playlist.get("images") else missing_file_url
+
+                        })
                 fetched += len(user_playlists["items"])
                 offset += limit
 
                 if len(user_playlists["items"]) < limit:
-                    break  
+                    break
+            self.playlists = playlists
+        return playlists
 
-        return self.playlists
-    
-    
+
 '''
 {
   "display_name": "gavin caulfield",
@@ -70,4 +81,3 @@ class User:
   "uri": "spotify:user:9yiidfk1ydpewq4u1ge28fidh"
 }
 '''
-    

@@ -1,5 +1,5 @@
 from ..models.album import Album
-from ...errors import *
+from ...utils.errors import *
 
 
 class AlbumCommands:

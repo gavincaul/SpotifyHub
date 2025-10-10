@@ -1,0 +1,92 @@
+/* Track model styles */
+.track-model {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 90vh;
+}
+
+/* Top section layout (like playlist-top) */
+.track-top {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.track-cover-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.track-cover {
+  display: block;
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Metadata side */
+.track-meta-inner {
+  max-height: 280px;
+  overflow: auto;
+  padding: 4px 4px 4px 0;
+}
+
+.track-artist {
+  opacity: 0.85;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.track-title {
+  margin: 0 0 10px 0;
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+.track-album {
+  opacity: 0.9;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.track-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.explicit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #b22222;
+  color: white;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.track-popularity {
+  opacity: 0.8;
+}
+
+.track-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.track-link:hover {
+  text-decoration: underline;
+}

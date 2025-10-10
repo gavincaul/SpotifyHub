@@ -1,3 +1,4 @@
+from ...utils.utils import missing_file_url
 
 
 class Album:
@@ -45,8 +46,8 @@ class Album:
         self.get_album()
         images = self.data.get("images") or []
         if images and len(images) > 0:
-            return images[0].get("url", "https://static.thenounproject.com/png/3647578-200.png")
-        return "https://static.thenounproject.com/png/3647578-200.png"
+            return images[0].get("url", missing_file_url)
+        return missing_file_url
 
     def get_album_artist_ids(self):
         self.get_album()
@@ -70,33 +71,47 @@ class Album:
 
     def get_album_tracks(self, positions=False):
         self.get_album()  # ensures self.data is populated
-        tracks_data = self.data.get("tracks", {}).get("items", [])
+        album = self.data
+        tracks_data = album.get("tracks", {}).get("items", [])
+
+        album_data = {
+            "id": album.get("id"),
+            "name": album.get("name"),
+            "images": {
+                "large": album.get("images", [{}])[0].get("url") if album.get("images") else "",
+                "medium": album.get("images", [{}])[1].get("url") if len(album.get("images", [])) > 1 else "",
+                "small": album.get("images", [{}])[2].get("url") if len(album.get("images", [])) > 2 else "",
+            },
+        }
+
+        formatted_tracks = []
+        for t in tracks_data:
+            track = {
+                "id": t.get("id"),
+                "name": t.get("name", "Unknown Track"),
+                "artist_data": [
+                    {"id": a.get("id"), "name": a.get(
+                        "name", "Unknown Artist")}
+                    for a in t.get("artists", [])
+                ],
+                "album_data": album_data,
+                "duration": t.get("duration_ms"),
+                "position": t.get("track_number"),
+                "explicit": t.get("explicit", False),
+                "popularity": None,  # not in album data
+                "added_at": None,
+                "added_by": None,
+                "is_local": t.get("is_local", False),
+                "url": t.get("external_urls", {}).get("spotify"),
+                "isSelected": False,
+            }
+            formatted_tracks.append(track)
 
         if positions:
-            # Map track_number => track info
-            track_dict = {}
-            for t in tracks_data:
-                track_dict[t["track_number"]] = {
-                    "id": t.get("id"),
-                    "name": t.get("name", "Unknown Name"),
-                    "artists": [artist.get("name", "Unknown Artist") for artist in t.get("artists", [])],
-                    "duration_ms": t.get("duration_ms"),
-                    "href": t.get("external_urls", {}).get("spotify"),
-                }
-            return track_dict
-        else:
-            # Return a simple list
-            track_list = []
-            for t in tracks_data:
-                track_list.append({
-                    "id": t.get("id"),
-                    "name": t.get("name", "Unknown Name"),
-                    "artists": [artist.get("name", "Unknown Artist") for artist in t.get("artists", [])],
-                    "duration_ms": t.get("duration_ms"),
-                    "href": t.get("external_urls", {}).get("spotify"),
-                    "track_number": t.get("track_number"),
-                })
-            return track_list
+
+            return {t["position"]: t for t in formatted_tracks}
+
+        return formatted_tracks
 
 
 '''

@@ -1,3 +1,4 @@
+from ...utils.utils import missing_file_url
 
 
 class Playlist:
@@ -13,47 +14,55 @@ class Playlist:
         return self.data
 
     def get_playlist_length(self):
-        if self.data is None:
-            self.data = self.get_playlist()
+        self.get_playlist()
         return self.data["tracks"]["total"]
 
     def get_playlist_name(self):
-        if self.data is None:
-            self.data = self.get_playlist()
+        self.get_playlist()
+
         return self.data["name"]
 
     def get_playlist_image(self):
-        if self.data is None:
-            self.data = self.get_playlist()
+        self.get_playlist()
+
         try:
             return self.data["images"][0]["url"]
         except TypeError as e:
             print("ERROR: img is null {e}")
-            return "https://static.thenounproject.com/png/3647578-200.png"
-        
+            return missing_file_url
+
     def get_playlist_description(self):
-        if self.data is None:
-          self.data = self.get_playlist()
+        self.get_playlist()
+
         return self.data["description"]
-    
+
     def get_playlist_owner(self):
-        if self.data is None:
-            self.data = self.get_playlist()
+        self.get_playlist()
+
         return (self.data["owner"]["id"], self.data["owner"]["display_name"])
 
+    def get_playlist_url(self):
+        self.get_playlist()
+
+        return self.data["external_urls"].get("spotify", "")
+
     def get_playlist_follower_count(self):
-        if self.data is None:
-            self.data = self.get_playlist()
+        self.get_playlist()
+
         return self.data["followers"]["total"]
 
     def get_playlist_visibility(self):
-        if self.data is None:
-            self.data = self.get_playlist()
+        self.get_playlist()
+
         return self.data["public"]
-    
+
+    def get_playlist_collaborative(self):
+        self.get_playlist()
+
+        return self.data["collaborative"]
+
     def get_playlist_tracks(self, total, positions=False):
-        if self.data is None:
-            self.data = self.get_playlist()
+        self.get_playlist()
 
         songs = []
         limit = 50
@@ -61,6 +70,7 @@ class Playlist:
 
         if total is None:
             self.get_playlist_length()
+
         else:
             while len(songs) < total:
                 result = self.sp.playlist_tracks(self.playlist_id,
@@ -68,37 +78,46 @@ class Playlist:
                 items = result["items"]
                 if not items:
                     break
-                if positions:
-                    for i, item in enumerate(items):
-                        songs.append((item, i+offset))
                 else:
                     songs.extend(items)
                 offset += len(items)
 
         return songs
 
-    def get_playlist_track_names(self, total):
+    def get_playlist_tracks_info(self, total):
         tracks = self.get_playlist_tracks(total)
         track_list = []
-        for item in tracks:
-            track_list.append((item["track"]["id"], item["track"]["name"]))
+        for i, item in enumerate(tracks):
+            track = item["track"]
+            if track is not None:
+              track_info = {
+                  "id": track["id"],
+                  "name": track["name"],
+                  "artist_data": [{"name": artist["name"], "id": artist["id"]} for artist in track["artists"]],
+                  "album_data": {"name": track["album"]["name"], "id": track["album"]["id"], "images": {"large": track["album"]["images"][0]["url"] if len(track["album"]["images"]) > 0 else missing_file_url, "medium": track["album"]["images"][1]["url"] if len(track["album"]["images"]) > 1 else missing_file_url, "small": track["album"]["images"][2]["url"] if len(track["album"]["images"]) > 2 else missing_file_url}},
+                  "duration_ms": track["duration_ms"],
+                  "position": i+1,
+                  "explicit": track["explicit"],
+                  "popularity": track["popularity"],
+                  "added_at": item["added_at"],
+                  "added_by": item["added_by"]["id"] if item["added_by"] else None,
+                  "is_local": item["is_local"],
+                  "url": track["external_urls"].get("spotify", "")
+              }
+              track_list.append(track_info)
+            else:
+                print(item)
         return track_list
 
-    def get_playlist_track_names_and_positions(self, total):
-        tracks = self.get_playlist_tracks(total, positions=True)
-        track_list = []
-        for item in tracks:
-            track_list.append((item[0]["track"]["id"], (
-                item[0]["track"]["name"], item[1])))
+    def get_playlist_track_ids(self, total):
+        tracks = self.get_playlist_tracks(total)
+        track_list = [item["track"]["id"] for item in tracks]
         return track_list
 
-
-
-    def upload_cover_image(self, URL):
+    def upload_cover_image_raw(self, image_b64):
+        self.get_playlist()
         try:
-            if self.data is None:
-                self.data = self.get_playlist()
-            self.sp.playlist_upload_cover_image(self.playlist_id, URL)
+            self.sp.playlist_upload_cover_image(self.playlist_id, image_b64)
             return True
         except Exception as e:
             print(f"WARNING. Upload_cover_image FAILED: {e}")
@@ -106,9 +125,9 @@ class Playlist:
 
     def remove_specific_track(self, track_id, position, positions):
         # This function calls for the position to remove, and the positions to add.
+        self.get_playlist()
+
         try:
-            if self.data is None:
-                self.data = self.get_playlist()
             self.sp.playlist_remove_specific_occurrences_of_items(
                 self.playlist_id, items=[{"uri": f"spotify:track:{track_id}", "positions": [position]}])
             for p in positions:
@@ -122,9 +141,9 @@ class Playlist:
             return False
 
     def remove_tracks(self, track_id):
+        self.get_playlist()
+
         try:
-            if self.data is None:
-                self.data = self.get_playlist()
             self.sp.playlist_remove_all_occurrences_of_items(
                 self.playlist_id, items=[track_id])
             return True
@@ -133,39 +152,69 @@ class Playlist:
             return False
 
     def add_specific_tracks(self, track_id, position):
+        self.get_playlist()
+        pll = self.get_playlist_length()
+        if position>pll-1:
+            position=pll
         try:
-            if self.data is None:
-                self.data = self.get_playlist()
-            self.sp.playlist_add_items(self.playlist_id, [track_id], position)
+
+            self.sp.playlist_add_items(self.playlist_id, track_id, position)
             return True
         except Exception as e:
             print(f"WARNING. Adding track FAILED: {e}")
             return False
-        
+
     def add_tracks(self, track_ids):
+        self.get_playlist()
+
         try:
-            if self.data is None:
-              self.data=self.get_playlist()
             self.sp.playlist_add_items(self.playlist_id, items=track_ids)
             return True
         except Exception as e:
             print(f"WARNING. Failed to add tracks: {e}")
-            return False
-        
-    def move_track(self, from_position, to_position):
-        """Move a track within the playlist from one position to another."""
+            raise e
+
+    def move_tracks(self, from_positions, to_position):
+        """
+        Move one or more tracks within the playlist.
+        from_positions: list of integers (track indices to move)
+        to_position: integer (target insert position)
+        """
+        self.get_playlist()
+
+        # Ensure positions are sorted so you move in a stable order
+        from_positions = sorted(set(from_positions))
         try:
-            if self.data is None:
-                self.data = self.get_playlist()
-            self.sp.playlist_reorder_items(
-                self.playlist_id,
-                range_start=from_position,
-                insert_before=to_position
-            )
+            # Since the list shifts after each move, adjust positions to the front, then
+            for offset, pos in enumerate(from_positions):
+                
+                adjusted_from = pos
+                adjusted_to = 0 + offset
+                sanity = self.sp.playlist_reorder_items(
+                    self.playlist_id,
+                    range_start=adjusted_from,
+                    insert_before=adjusted_to,
+                    range_length=1
+                )
+                if "snapshot_id" not in sanity:
+                    print(f"WARNING. Failed to move track at pos {pos} to {to_position}")
+                    return False
+            mtl = len(from_positions) #move track length
+
+            sanity = self.sp.playlist_reorder_items(
+                    self.playlist_id,
+                    range_start=0,
+                    insert_before=to_position,
+                    range_length=mtl
+                )
+            if "snapshot_id" not in sanity:
+                print(f"WARNING. Failed to move track at pos {pos} to {to_position}")
+                return False
             return True
         except Exception as e:
-            print(f"WARNING. Failed to move track: {e}")
+            print(f"WARNING. Failed to move tracks: {e}")
             return False
+
 
 '''
 {
