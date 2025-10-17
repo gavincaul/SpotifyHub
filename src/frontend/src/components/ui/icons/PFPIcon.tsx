@@ -111,7 +111,6 @@ export default function PFPIcon({
               <strong>User Info</strong>
               <p style={{ margin: "4px 0" }}>Name: {userName}</p>
               <p style={{ margin: "4px 0" }}>ID: {userId}</p>
-              <button onClick={clearSession()}>Remove SessionStorage</button>
             </div>
           )}
         </div>

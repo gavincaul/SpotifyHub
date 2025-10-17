@@ -1,9 +1,10 @@
+import time
 from flask import Blueprint, request, jsonify, current_app
 from ...utils.errors import *
 from ..models.currentuser import CurrentUser
 import spotipy
 currentuser_bp = Blueprint("currentuser", __name__)
-import time
+
 
 def check_logged_in(error=CurrentUserOperationError):
     currentuser_cmds = current_app.config.get("currentuser_commands")
@@ -20,12 +21,12 @@ def login_start():
     try:
         spotify_manager = current_app.config["spotify_manager"]
         auth_url = spotify_manager.get_auth_url()
-        
         return jsonify({"auth_url": auth_url})
     except SpotifyException as e:
         raise map_spotify_error(e, "current_user", "self")
     except Exception as e:
-        raise CurrentUserOperationError(f"Unexpected error starting login: {str(e)}")
+        raise CurrentUserOperationError(
+            f"Unexpected error starting login: {str(e)}")
 
 
 @currentuser_bp.route("/login/callback", methods=["GET"])
@@ -37,16 +38,20 @@ def login_callback():
 
         if not code:
             raise BadRequestError("Missing authorization code")
-        
+
         # This does the complete flow:
         # 1. Exchanges code for tokens
-        # 2. Gets user info from Spotify  
+        # 2. Gets user info from Spotify
         # 3. Caches tokens with user-specific Redis key
         # 4. Sets up authenticated client
+        start = time.time()
         spotify_user_id = spotify_manager.login_with_code(code)
-        
+        end = time.time()
+        print(f"Logged in with code in {end-start:.2f}s")
+
         # Now you have the actual Spotify user ID
-        currentuser_cmds.current_user = CurrentUser(spotify_manager=spotify_manager)
+        currentuser_cmds.current_user = CurrentUser(
+            spotify_manager=spotify_manager)
         user_data = currentuser_cmds.get_profile()
 
         return jsonify({
@@ -57,7 +62,8 @@ def login_callback():
     except SpotifyException as e:
         raise map_spotify_error(e, "current_user", "self")
     except Exception as e:
-        raise CurrentUserOperationError(f"Unexpected error in callback: {str(e)}")
+        raise CurrentUserOperationError(
+            f"Unexpected error in callback: {str(e)}")
 
 
 @currentuser_bp.route("/logout", methods=["POST"])
@@ -66,7 +72,9 @@ def logout():
         check_logged_in()
 
         currentuser_cmds = current_app.config.get("currentuser_commands")
-        currentuser_cmds.logout()  # Reset current user to force reload
+        spotify_manager = current_app.config.get("spotify_manager")
+        spotify_manager.logout()
+        currentuser_cmds.current_user = None  # Reset current user to force reload
         return jsonify({"code": 200, "message": "User logged out successfully"})
     except SpotifyException as e:
         raise map_spotify_error(e, "current_user", "self")
@@ -319,7 +327,7 @@ def get_user_devices():
 
 @currentuser_bp.route("/playlists", methods=["GET"])
 def get_user_playlists():
-    try: 
+    try:
         check_logged_in()
         currentuser_cmds = current_app.config.get("currentuser_commands")
         playlists = currentuser_cmds.get_playlists()
@@ -344,6 +352,7 @@ def get_user_albums():
         raise CurrentUserOperationError(
             f"Unexpected error fetching albums: {str(e)}")
 
+
 @currentuser_bp.route("/tracks", methods=["GET"])
 def get_user_tracks():
     check_logged_in()
@@ -356,6 +365,7 @@ def get_user_tracks():
     except Exception as e:
         raise CurrentUserOperationError(
             f"Unexpected error fetching tracks: {str(e)}")
+
 
 @currentuser_bp.route("/artists", methods=["GET"])
 def get_user_artists():

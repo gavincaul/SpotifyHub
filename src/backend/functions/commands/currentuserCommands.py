@@ -2,7 +2,7 @@ from ..models.currentuser import CurrentUser
 from ...utils.errors import *
 from ...utils.utils import missing_file_url
 import spotipy
-import logging
+
 
 
 class CurrentUserCommands:
@@ -15,36 +15,41 @@ class CurrentUserCommands:
         if self.current_user:
             return self.current_user
 
-        # Scan Redis for spotify_token:* keys
         try:
-            token_keys = self.spotify_manager.redis_client.keys(
-                "spotify_token:*")
-            if token_keys:
-                key = token_keys[0]
-                token_info = self.spotify_manager.redis_client.get(key)
-                if token_info:
-                    import json
-                    token_info = json.loads(token_info)
-                    self.spotify_manager.current_user_id = key.split(":")[1]
+            # Scan Redis for user refresh tokens
+            user_keys = self.spotify_manager.redis_client.keys("spotify_user:*")
+            if not user_keys:
+                return None  # No user logged in
 
-                    # Rehydrate Spotify client
-                    self.spotify_manager.sp = spotipy.Spotify(
-                        auth=token_info["access_token"]
-                    )
+            # For simplicity, restore the first user found
+            user_key = user_keys[0]
+            user_id = user_key.split(":")[1]
 
-                    # Validate token by fetching current user
-                    self.spotify_manager.sp.me()  # <-- this may raise SpotifyException
+            refresh_token = self.spotify_manager.redis_client.get(user_key)
+            if not refresh_token:
+                return None
 
-                    from ..models.currentuser import CurrentUser
-                    self.current_user = CurrentUser(self.spotify_manager)
-                    print(
-                        f"✅ Restored current_user from Redis: {self.spotify_manager.current_user_id}")
-                    return self.current_user
-        except SpotifyException as e:
+            # Refresh access token
+            token_info = self.spotify_manager.sp_oauth.refresh_access_token(refresh_token)
+            access_token = token_info["access_token"]
+
+            if self.spotify_manager.sp:
+                self.spotify_manager.sp.__del__()
+            self.spotify_manager.sp = spotipy.Spotify(auth=access_token)
+            self.spotify_manager.current_user_id = user_id
+
+            # Create CurrentUser object
+            from ..models.currentuser import CurrentUser
+            self.current_user = CurrentUser(self.spotify_manager)
+
+            print(f"✅ Restored current_user from Redis: {user_id}")
+            return self.current_user
+
+        except spotipy.exceptions.SpotifyException as e:
             print(f"⚠️ Spotify error restoring token from Redis: {e}")
             raise map_spotify_error(e, "current_user", "self")
         except Exception as e:
-            print(f"⚠️ Failed to restore token from Redis: {e}")
+            print(f"⚠️ Failed to restore current_user: {e}")
             raise
 
         return None
@@ -62,53 +67,9 @@ class CurrentUserCommands:
             )
 
     # ---------- Core User Management ----------
-    def login(self):
-        """Login user and set current_user"""
-        def operation():
-            if self.current_user is not None:
-                return {"message": f"Already logged in as {self.current_user.user_id}"}
+   
 
-            # Attempt to restore user from cached Redis token
-            cached_user_id = self.spotify_manager.current_user_id
-            if cached_user_id and self.spotify_manager.user_cache_handler:
-                cached_token = self.spotify_manager.user_cache_handler.get_cached_token()
-                if cached_token:
-                    # Rehydrate Spotify client with cached token
-                    self.spotify_manager.sp = spotipy.Spotify(
-                        auth=cached_token["access_token"])
-                    self.current_user = CurrentUser(self.spotify_manager)
-                    return {"message": f"Restored session for {cached_user_id}"}
-
-            # No cached token, proceed with OAuth login
-            if not self.spotify_manager._create_oauth():
-                raise UnauthorizedError("Login failed or cancelled")
-
-            user_id = self.spotify_manager.get_current_user_id()
-            if not user_id:
-                raise SpotifyAPIError(
-                    "Failed to retrieve user info after login")
-
-            self.current_user = CurrentUser(self.spotify_manager)
-            return {"message": f"Logged in as {user_id}"}
-
-        return self._handle_currentuser_operation(operation)
-
-    def logout(self):
-        """Log out current user and clear user session"""
-        def operation():
-            if not self.current_user:
-                raise UnauthorizedError("No user currently logged in")
-
-            # Call SpotifyManager to clear session and delete cached token
-            self.spotify_manager.logout()
-
-            # Clear CurrentUser object
-            self.current_user = None
-
-            return {"message": "User logged out successfully"}
-
-        return self._handle_currentuser_operation(operation)
-
+  
     def get_profile(self, raw=False):
         """Return current user profile data"""
         def operation():

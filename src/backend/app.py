@@ -20,10 +20,10 @@ from .functions.routes.searchRoutes import search_bp
 from .functions.routes.songRoutes import song_bp
 from .functions.routes.userRoutes import user_bp
 
+
 def create_app():
 
     app = Flask(__name__)
-    CORS(app, origins="http://localhost:3000", supports_credentials=True,   methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],)
 
     @app.errorhandler(APIError)
     def handle_api_error(error):
@@ -71,5 +71,7 @@ def create_app():
     app.register_blueprint(search_bp, url_prefix="/search")
     app.register_blueprint(song_bp, url_prefix="/song")
     app.register_blueprint(user_bp, url_prefix="/user")
+    CORS(app, origins="http://localhost:3000", supports_credentials=True,
+         methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],)
 
     return app

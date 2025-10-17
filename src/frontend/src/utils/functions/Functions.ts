@@ -165,3 +165,46 @@ export function Library(): FnGroup[] {
     { group: "Analysis", items: [analyzeTracks] },
   ];
 }
+
+
+
+
+// Playlists page definitions
+export function User(): FnGroup[] {
+
+  const analyzeTracks: FnItem = {
+    id: "analyze-tracks",
+    title: "Analyze Tracks",
+    description: "Run a quick analysis on a playlist's tracks.",
+    fields: [
+      { 
+        name: "playlist", 
+        label: "Playlist", 
+        type: "source", 
+        placeholder: "Drop a playlist here",
+        accept: "playlist"
+      },
+      {
+        name: "metric",
+        label: "Metric",
+        type: "select",
+        options: [
+          { label: "Energy", value: "energy" },
+          { label: "Danceability", value: "danceability" },
+          { label: "Valence", value: "valence" },
+        ],
+        defaultValue: "energy",
+      },
+      { name: "topN", label: "Top N", type: "number", defaultValue: 10 },
+    ],
+    run: async (values) => {
+      await new Promise((r) => setTimeout(r, 600));
+      return { report: { metric: values.metric, topN: values.topN, avg: Math.random().toFixed(2) } };
+    },
+    ctaLabel: "Analyze",
+  };
+
+  return [
+    { group: "Analysis", items: [analyzeTracks] },
+  ];
+}
